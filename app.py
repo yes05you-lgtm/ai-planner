@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -17,6 +17,7 @@ load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "study-planner-secret-key-2026")
+ACCESS_PIN = os.getenv("ACCESS_PIN", "1234")  # 기본 4자리 비밀번호 (1234)
 PORT = int(os.getenv("PORT", 5000))
 
 # 3. Gemini API 초기화
@@ -31,16 +32,51 @@ app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """4자리 비밀번호 로그인 페이지"""
+    if request.method == "POST":
+        input_pin = request.form.get("pin", "").strip()
+        if input_pin == ACCESS_PIN:
+            session["authenticated"] = True
+            logging.info("비밀번호 4자리 인증 성공")
+            return redirect(url_for("index"))
+        else:
+            logging.warning("비밀번호 인증 실패: 잘못된 PIN 입력")
+            return render_template("login.html", error="비밀번호가 올바르지 않습니다. 다시 입력해주세요.")
+
+    if session.get("authenticated"):
+        return redirect(url_for("index"))
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    """로그아웃 처리"""
+    session.pop("authenticated", None)
+    logging.info("사용자 로그아웃")
+    return redirect(url_for("login"))
+
+
 @app.route("/")
 def index():
-    """메인 페이지 렌더링"""
-    logging.info("[GET /] 메인 페이지 접근")
+    """메인 페이지 렌더링 (인증 필수)"""
+    if not session.get("authenticated"):
+        logging.info("[GET /] 미인증 사용자 감지 -> 로그인 페이지로 리다이렉트")
+        return redirect(url_for("login"))
+
+    logging.info("[GET /] 인증된 사용자 메인 페이지 접근")
     return render_template("index.html")
 
 
 @app.route("/generate", methods=["POST"])
 def generate_study_plan():
-    """AI 학습플래너 생성 API"""
+    """AI 학습플래너 생성 API (인증 필수)"""
+    if not session.get("authenticated"):
+        logging.warning("[401] 비인가 요청: 세션 인증 만료")
+        return jsonify({"success": False, "error": "로그인 세션이 만료되었습니다. 새로고침 후 다시 로그인해주세요."}), 401
+
     logging.info("[POST /generate] 학습플래너 생성 요청 접수")
 
     try:

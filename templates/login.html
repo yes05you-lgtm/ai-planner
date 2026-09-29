@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>접속 인증 - AI 맞춤형 학습플래너</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .login-wrapper {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            padding: 36px 28px;
+        }
+        .lock-icon {
+            font-size: 52px;
+            margin-bottom: 12px;
+        }
+        .pin-input {
+            font-size: 32px;
+            letter-spacing: 16px;
+            text-align: center;
+            padding: 12px 16px;
+            width: 220px;
+            margin: 20px auto;
+            display: block;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+        }
+        .pin-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .login-hint {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container login-wrapper">
+        <div class="card login-card">
+            <div class="lock-icon">🔒</div>
+            <h2>접속 비밀번호 입력</h2>
+            <p class="subtitle" style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+                이 서비스는 권한이 있는 사용자만 이용할 수 있습니다.<br>4자리 비밀번호를 입력해주세요.
+            </p>
+
+            {% if error %}
+            <div class="alert alert-error" style="margin-top: 16px;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/login">
+                <input type="password" 
+                       name="pin" 
+                       class="pin-input" 
+                       maxlength="4" 
+                       pattern="[0-9]{4}" 
+                       inputmode="numeric" 
+                       placeholder="••••" 
+                       autofocus 
+                       required>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                    🔓 접속하기
+                </button>
+            </form>
+
+            <p class="login-hint">비밀번호는 .env 설정 파일에서 변경할 수 있습니다.</p>
+        </div>
+    </div>
+</body>
+</html>
