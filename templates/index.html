@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 맞춤형 학습플래너</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Markdown 렌더링 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 영역 -->
+        <header class="header">
+            <div class="badge">EduTech AI Studio</div>
+            <h1>🎯 AI 맞춤형 학습플래너</h1>
+            <p class="subtitle">학습 목표와 현재 수준을 입력하면, Gemini AI가 초밀착 맞춤형 학습 계획을 설계해 드립니다.</p>
+        </header>
+
+        <!-- 메인 콘텐츠: 좌측 입력 폼 / 우측 결과 화면 -->
+        <main class="main-layout">
+            <!-- 1. 입력 폼 섹션 -->
+            <section class="form-section card">
+                <h2>📋 수험생 학습 정보 입력</h2>
+                <form id="plannerForm">
+                    <!-- 학습 목표 -->
+                    <div class="form-group">
+                        <label for="goal">학습 목표 <span class="required">*</span></label>
+                        <input type="text" id="goal" name="goal" placeholder="예: 토익 850점 달성, 정보처리기사 실기 합격" required>
+                    </div>
+
+                    <!-- 시험일 / 목표일 -->
+                    <div class="form-group">
+                        <label for="examDate">시험일 (목표 달성일) <span class="required">*</span></label>
+                        <input type="date" id="examDate" name="exam_date" required>
+                    </div>
+
+                    <!-- 가능한 요일 (일-토) -->
+                    <div class="form-group">
+                        <label>학습 가능한 요일 <span class="required">*</span> <span class="label-hint">(클릭하여 선택/해제)</span></label>
+                        <div class="weekday-selector" id="weekdaySelector">
+                            <button type="button" class="weekday-chip active" data-day="일">일</button>
+                            <button type="button" class="weekday-chip active" data-day="월">월</button>
+                            <button type="button" class="weekday-chip active" data-day="화">화</button>
+                            <button type="button" class="weekday-chip active" data-day="수">수</button>
+                            <button type="button" class="weekday-chip active" data-day="목">목</button>
+                            <button type="button" class="weekday-chip active" data-day="금">금</button>
+                            <button type="button" class="weekday-chip active" data-day="토">토</button>
+                        </div>
+                    </div>
+
+                    <!-- 2열 그리드: 현재 수준 & 하루 가능 시간 -->
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="currentLevel">현재 수준 <span class="required">*</span></label>
+                            <select id="currentLevel" name="current_level" required>
+                                <option value="" disabled selected>수준을 선택하세요</option>
+                                <option value="입문/노베이스 (기초 개념부터 시작 필요)">입문/노베이스 (기초 시작)</option>
+                                <option value="기초 단계 (기본 이론 1회독 완료)">기초 단계 (기본 1회독 완료)</option>
+                                <option value="중급 단계 (개념 이해 완료, 기출 풀이 중)">중급 단계 (기출 풀이 중)</option>
+                                <option value="상급/실전 단계 (취약 파트 극복 및 고득점 목표)">상급/실전 (고득점 목표)</option>
+                            </select>
+                        </div>
+                        <div class="form-group col">
+                            <label for="dailyTime">하루 가용 학습 시간 <span class="required">*</span></label>
+                            <select id="dailyTime" name="daily_time" required>
+                                <option value="" disabled selected>시간을 선택하세요</option>
+                                <option value="하루 1~2시간 (직장인/자투리 병행형)">하루 1~2시간 (직장인/자투리)</option>
+                                <option value="하루 3~4시간 (표준 집중형)">하루 3~4시간 (표준 집중형)</option>
+                                <option value="하루 5~6시간 (준전업 수험생)">하루 5~6시간 (준전업 수험생)</option>
+                                <option value="하루 8시간 이상 (전업 올인 수험생)">하루 8시간 이상 (전업 수험생)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 취약 영역 -->
+                    <div class="form-group">
+                        <label for="weakness">취약 영역 및 고민 파트 <span class="required">*</span></label>
+                        <textarea id="weakness" name="weakness" rows="3" placeholder="예: 영어 독해 시간 부족 및 문법 파트 5 오답률 높음, 프로그래밍 알고리즘 구현 어려움" required></textarea>
+                    </div>
+
+                    <!-- 선호 학습 방식 -->
+                    <div class="form-group">
+                        <label for="style">선호 학습 방식 <span class="required">*</span></label>
+                        <select id="style" name="style" required>
+                            <option value="" disabled selected>학습 방식을 선택하세요</option>
+                            <option value="인터넷 강의 + 기본서 단권화 중심">인터넷 강의 + 기본서 단권화</option>
+                            <option value="기출문제 풀이 + 오답노트 무한 회독 중심">기출문제 풀이 + 오답노트 회독</option>
+                            <option value="핵심 요약노트 암기 + 백지 복습법 중심">핵심 요약노트 암기 + 백지 복습</option>
+                            <option value="포모도로(25분 집중/5분 휴식) 고강도 압축형">포모도로 고강도 압축형</option>
+                        </select>
+                    </div>
+
+                    <!-- AI 모드 선택 (Prompt A vs Prompt B) -->
+                    <div class="form-group">
+                        <label>AI 플래너 코칭 모드</label>
+                        <div class="radio-group">
+                            <label class="radio-card">
+                                <input type="radio" name="promptType" value="A" checked>
+                                <div class="radio-content">
+                                    <div class="radio-title">🌱 Mode A. 맞춤형 페이스메이커</div>
+                                    <div class="radio-desc">지속 가능한 습관 형성과 멘탈 케어, 균형 잡힌 안정적 플랜</div>
+                                </div>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="promptType" value="B">
+                                <div class="radio-content">
+                                    <div class="radio-title">⚡ Mode B. 전문가 하드트레이닝</div>
+                                    <div class="radio-desc">취약점 집중 타파 및 시간 효율 극대화, 실전 고득점 압축 플랜</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 제출 버튼 -->
+                    <button type="submit" id="submitBtn" class="btn btn-primary">
+                        <span class="btn-text">🚀 AI 학습플래너 생성하기</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- 2. 결과 출력 섹션 -->
+            <section class="result-section card">
+                <div class="result-header">
+                    <h2>📊 AI 맞춤형 학습 계획서</h2>
+                    <div class="result-actions" id="actionButtons" style="display: none;">
+                        <button type="button" id="copyBtn" class="btn btn-secondary btn-sm">📋 결과 복사</button>
+                        <button type="button" id="downloadBtn" class="btn btn-secondary btn-sm">💾 .md 다운로드</button>
+                    </div>
+                </div>
+
+                <!-- 에러 메시지 알림창 -->
+                <div id="errorMessage" class="alert alert-error" style="display: none;"></div>
+
+                <!-- 초기 대기 안내 -->
+                <div id="placeholderView" class="placeholder-view">
+                    <div class="placeholder-icon">📖</div>
+                    <h3>아직 생성된 플랜이 없습니다</h3>
+                    <p>좌측 폼에 학습 목표와 정보를 입력하고 <strong>[AI 학습플래너 생성하기]</strong> 버튼을 눌러주세요.</p>
+                    <div class="output-preview-tags">
+                        <span>주간계획</span>
+                        <span>일일루틴</span>
+                        <span>망각곡선 복습주기</span>
+                        <span>자가점검 퀴즈</span>
+                        <span>진도 체크리스트</span>
+                        <span>학습 회고</span>
+                    </div>
+                </div>
+
+                <!-- 로딩 상태 표시 -->
+                <div id="loadingView" class="loading-view" style="display: none;">
+                    <div class="spinner"></div>
+                    <h3>Gemini AI가 최적의 학습 로드맵을 설계하고 있습니다...</h3>
+                    <p>취약영역 분석, 복습 주기 계산, 일일 타임테이블을 정밀하게 구성 중입니다.<br>(약 10~20초 정도 소요됩니다)</p>
+                </div>
+
+                <!-- 최종 마크다운 렌더링 결과창 -->
+                <div id="resultContent" class="markdown-body" style="display: none;"></div>
+            </section>
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="footer">
+            <p>© 2026 AI Study Planner Studio. Powered by Google Gemini API & Flask.</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
