@@ -3,6 +3,91 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+    // -----------------------------------------------------------
+    // 0. 4자리 보안 잠금 화면 (PIN Lock Overlay)
+    // -----------------------------------------------------------
+    const lockScreen = document.getElementById("lock-screen");
+    const pinForm = document.getElementById("pin-form");
+    const pinInput = document.getElementById("pin-input");
+    const pinError = document.getElementById("pin-error");
+    const btnLockApp = document.getElementById("btn-lock-app");
+
+    // 세션 스토리지 잠금 상태 확인
+    if (sessionStorage.getItem("app_unlocked") === "true") {
+        lockScreen && lockScreen.classList.add("unlocked");
+    } else if (lockScreen && !lockScreen.classList.contains("unlocked")) {
+        setTimeout(() => {
+            if (pinInput) pinInput.focus();
+        }, 150);
+    }
+
+    // PIN 번호 제출 (서버 검증 + 애니메이션)
+    if (pinForm) {
+        pinForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const enteredPin = pinInput.value.trim();
+            if (!enteredPin) return;
+
+            try {
+                const response = await fetch("/api/verify-pin", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ pin: enteredPin })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    if (pinError) pinError.classList.add("hidden");
+                    sessionStorage.setItem("app_unlocked", "true");
+                    lockScreen.classList.add("unlocked");
+                    pinInput.value = "";
+                } else {
+                    triggerPinShake();
+                }
+            } catch (err) {
+                console.error("PIN 검증 통신 오류:", err);
+                triggerPinShake();
+            }
+        });
+    }
+
+    function triggerPinShake() {
+        if (pinError) pinError.classList.remove("hidden");
+        const card = lockScreen ? lockScreen.querySelector(".lock-card") : null;
+        if (card) {
+            card.classList.remove("shake");
+            void card.offsetWidth; // DOM reflow 촉발
+            card.classList.add("shake");
+        }
+        if (pinInput) {
+            pinInput.value = "";
+            pinInput.focus();
+        }
+    }
+
+    // 상단 '🔒 잠금' 버튼 클릭 시 다시 잠금
+    if (btnLockApp) {
+        btnLockApp.addEventListener("click", async () => {
+            sessionStorage.removeItem("app_unlocked");
+            if (lockScreen) lockScreen.classList.remove("unlocked");
+            if (pinError) pinError.classList.add("hidden");
+            if (pinInput) {
+                pinInput.value = "";
+                setTimeout(() => {
+                    pinInput.focus();
+                }, 150);
+            }
+            try {
+                await fetch("/logout", { method: "POST" });
+            } catch (err) {
+                console.error("로그아웃 오류:", err);
+            }
+        });
+    }
+
     // 1. DOM 요소 가져오기
     const form = document.getElementById("plannerForm");
     const submitBtn = document.getElementById("submitBtn");
@@ -100,6 +185,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok || !data.success) {
+                if (response.status === 401) {
+                    sessionStorage.removeItem("app_unlocked");
+                    if (lockScreen) {
+                        lockScreen.classList.remove("unlocked");
+                        if (pinInput) {
+                            pinInput.value = "";
+                            pinInput.focus();
+                        }
+                    }
+                }
                 throw new Error(data.error || "서버에서 학습플래너를 생성하지 못했습니다.");
             }
 

@@ -9,12 +9,36 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
+    <!-- =========================================================
+         0. 4자리 보안 잠금 화면 (PIN Lock Overlay)
+         ========================================================= -->
+    <div id="lock-screen" class="lock-overlay {% if is_authenticated %}unlocked{% endif %}">
+        <div class="lock-card">
+            <div class="study-avatar">
+                <span class="study-icon">🎯</span>
+                <span class="sparkle-icon">✨</span>
+            </div>
+            <h2>시크릿 AI 학습 플래너</h2>
+            <p class="lock-sub">보안을 위해 4자리 비밀번호를 입력해 주세요.</p>
+            
+            <form id="pin-form" class="pin-form">
+                <div class="pin-input-box">
+                    <input type="password" id="pin-input" maxlength="4" inputmode="numeric" placeholder="● ● ● ●" autofocus autocomplete="off">
+                </div>
+                <p id="pin-error" class="pin-error hidden">❌ 비밀번호가 올바르지 않습니다.</p>
+                <button type="submit" class="btn btn-primary full-width pin-btn">
+                    🔓 플래너 열기
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div class="container">
         <!-- 헤더 영역 -->
         <header class="header">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div class="badge">EduTech AI Studio</div>
-                <a href="/logout" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px;">🔒 로그아웃</a>
+                <button type="button" id="btn-lock-app" class="btn btn-secondary btn-sm" title="플래너 다시 잠그기" style="font-size: 12px; padding: 4px 12px; cursor: pointer;">🔒 잠금</button>
             </div>
             <h1>🎯 AI 맞춤형 학습플래너</h1>
             <p class="subtitle">학습 목표와 현재 수준을 입력하면, Gemini AI가 초밀착 맞춤형 학습 계획을 설계해 드립니다.</p>

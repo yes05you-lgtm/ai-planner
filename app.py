@@ -32,42 +32,42 @@ app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
 
 
+@app.route("/api/verify-pin", methods=["POST"])
+def verify_pin():
+    """4자리 PIN 비밀번호 검증 API (오버레이 잠금 화면용)"""
+    data = request.get_json() or {}
+    input_pin = str(data.get("pin", "")).strip()
+    if input_pin == ACCESS_PIN:
+        session["authenticated"] = True
+        logging.info("비밀번호 4자리 인증 성공")
+        return jsonify({"success": True})
+    else:
+        logging.warning("비밀번호 인증 실패: 잘못된 PIN 입력")
+        return jsonify({"success": False, "error": "비밀번호가 올바르지 않습니다."}), 401
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """4자리 비밀번호 로그인 페이지"""
-    if request.method == "POST":
-        input_pin = request.form.get("pin", "").strip()
-        if input_pin == ACCESS_PIN:
-            session["authenticated"] = True
-            logging.info("비밀번호 4자리 인증 성공")
-            return redirect(url_for("index"))
-        else:
-            logging.warning("비밀번호 인증 실패: 잘못된 PIN 입력")
-            return render_template("login.html", error="비밀번호가 올바르지 않습니다. 다시 입력해주세요.")
-
-    if session.get("authenticated"):
-        return redirect(url_for("index"))
-
-    return render_template("login.html")
+    """기존 로그인 페이지 접근 시 메인 화면으로 리다이렉트 (메인 화면에서 오버레이 락 작동)"""
+    return redirect(url_for("index"))
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
-    """로그아웃 처리"""
+    """로그아웃 / 잠금 처리"""
     session.pop("authenticated", None)
-    logging.info("사용자 로그아웃")
-    return redirect(url_for("login"))
+    logging.info("사용자 잠금/로그아웃 완료")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True})
+    return redirect(url_for("index"))
 
 
 @app.route("/")
 def index():
-    """메인 페이지 렌더링 (인증 필수)"""
-    if not session.get("authenticated"):
-        logging.info("[GET /] 미인증 사용자 감지 -> 로그인 페이지로 리다이렉트")
-        return redirect(url_for("login"))
-
-    logging.info("[GET /] 인증된 사용자 메인 페이지 접근")
-    return render_template("index.html")
+    """메인 페이지 렌더링 (인증 상태를 템플릿에 전달하여 오버레이 잠금 화면 표시 여부 결정)"""
+    is_auth = session.get("authenticated", False)
+    logging.info(f"[GET /] 메인 페이지 접근 (인증 여부: {is_auth})")
+    return render_template("index.html", is_authenticated=is_auth)
 
 
 @app.route("/generate", methods=["POST"])
