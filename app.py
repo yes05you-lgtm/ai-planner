@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -65,6 +65,19 @@ def logout():
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"success": True})
     return redirect(url_for("index"))
+
+
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    """정적 파일 서빙 (Vercel 및 로컬 환경 동시 지원)"""
+    for folder in [
+        os.path.join(BASE_DIR, "public", "static"),
+        os.path.join(BASE_DIR, "static")
+    ]:
+        target = os.path.join(folder, filename)
+        if os.path.exists(target):
+            return send_from_directory(folder, filename)
+    return jsonify({"error": "Static file not found"}), 404
 
 
 @app.route("/")
