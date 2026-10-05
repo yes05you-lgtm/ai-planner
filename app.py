@@ -27,8 +27,13 @@ if GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_api_key_here":
 else:
     logging.warning("유효한 GEMINI_API_KEY가 .env 파일에 설정되지 않았습니다.")
 
-# 4. Flask 앱 초기화
-app = Flask(__name__)
+# 4. Flask 앱 초기화 (Vercel 및 로컬 환경 모두 호환되도록 절대 경로 지정)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static")
+)
 app.secret_key = FLASK_SECRET_KEY
 
 
@@ -63,11 +68,24 @@ def logout():
 
 
 @app.route("/")
+@app.route("/app")
+@app.route("/app.py")
+@app.route("/api/index")
+@app.route("/api/index.py")
 def index():
-    """메인 페이지 렌더링 (인증 상태를 템플릿에 전달하여 오버레이 잠금 화면 표시 여부 결정)"""
+    """메인 페이지 렌더링 (다양한 진입 경로 / 및 /app 지원)"""
     is_auth = session.get("authenticated", False)
-    logging.info(f"[GET /] 메인 페이지 접근 (인증 여부: {is_auth})")
+    logging.info(f"[GET {request.path}] 메인 페이지 접근 (인증 여부: {is_auth})")
     return render_template("index.html", is_authenticated=is_auth)
+
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    """Vercel 리라이트 경로 차이나 URL 오타로 404 발생 시 메인 페이지로 부드럽게 안내"""
+    if request.method == "GET" and not request.path.startswith("/static/"):
+        logging.info(f"[404 Fallback] {request.path} -> 메인 페이지로 복구 렌더링")
+        return render_template("index.html", is_authenticated=session.get("authenticated", False))
+    return jsonify({"error": "요청하신 리소스를 찾을 수 없습니다."}), 404
 
 
 @app.route("/generate", methods=["POST"])
